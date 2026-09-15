@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>정수기 상태</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#172033; background:#f3f7fb; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; padding:24px 16px; }
+    main { width:min(100%, 520px); margin:0 auto; }
+    header { margin:8px 4px 22px; }
+    h1 { margin:0 0 8px; font-size:28px; }
+    .subtitle { margin:0; color:#64748b; font-size:14px; }
+    .card { background:#fff; border:1px solid #e3eaf2; border-radius:18px; padding:8px 18px; box-shadow:0 10px 30px rgba(36,65,93,.07); }
+    .row { display:flex; justify-content:space-between; align-items:center; gap:20px; min-height:64px; border-bottom:1px solid #eef2f6; }
+    .row:last-child { border-bottom:0; }
+    .label { color:#536174; font-size:15px; }
+    .value { text-align:right; font-size:17px; font-weight:700; overflow-wrap:anywhere; }
+    .normal { color:#098658; }
+    .error { color:#c53636; }
+    .unknown { color:#64748b; }
+    .notice { margin:16px 4px 0; padding:13px 15px; border-radius:12px; background:#e9f3ff; color:#315b85; font-size:13px; line-height:1.55; }
+    .invalid { display:none; margin:0 0 14px; padding:13px 15px; border-radius:12px; background:#fff1f1; color:#a52929; font-size:14px; }
+    code { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>정수기 상태</h1>
+      <p class="subtitle">NFC에 마지막으로 기록된 정보</p>
+    </header>
+
+    <div id="invalid" class="invalid">상태 데이터가 없거나 형식이 올바르지 않습니다. 정수기에 다시 태깅해 주세요.</div>
+
+    <section class="card" aria-label="정수기 상태 정보">
+      <div class="row"><span class="label">모델</span><span class="value" id="model">-</span></div>
+      <div class="row"><span class="label">냉수 온도</span><span class="value" id="cold">-</span></div>
+      <div class="row"><span class="label">온수 온도</span><span class="value" id="hot">-</span></div>
+      <div class="row"><span class="label">에러 상태</span><span class="value" id="error">-</span></div>
+      <div class="row"><span class="label">냉수 설정</span><span class="value" id="coldMode">-</span></div>
+      <div class="row"><span class="label">온수 설정</span><span class="value" id="hotMode">-</span></div>
+      <div class="row"><span class="label">무드등 밝기</span><span class="value" id="brightness">-</span></div>
+      <div class="row"><span class="label">펌웨어</span><span class="value" id="fw">-</span></div>
+      <div class="row"><span class="label">기록 번호</span><span class="value" id="seq">-</span></div>
+    </section>
+
+    <p class="notice">이 화면은 실시간 통신 화면이 아닙니다. 최신 상태는 정수기에 다시 태깅하여 확인해 주세요.</p>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.hash.slice(1));
+    const get = (key) => params.get(key);
+    const put = (id, value, className = "") => {
+      const el = document.getElementById(id);
+      el.textContent = value;
+      el.className = `value ${className}`.trim();
+    };
+    const temp = (key) => {
+      const raw = get(key);
+      if (raw === null || raw.trim() === "") return "확인 불가";
+      const number = Number(raw);
+      return Number.isFinite(number) ? `${number.toFixed(1)}℃` : "데이터 오류";
+    };
+    const textOrUnknown = (key) => get(key)?.trim() || "확인 불가";
+
+    if ([...params.keys()].length === 0) document.getElementById("invalid").style.display = "block";
+
+    put("model", textOrUnknown("model"));
+    put("cold", temp("cold"));
+    put("hot", temp("hot"));
+
+    const errorCode = get("error");
+    if (errorCode === "0") put("error", "정상", "normal");
+    else if (errorCode) put("error", `에러 ${errorCode}`, "error");
+    else put("error", "확인 불가", "unknown");
+
+    put("coldMode", get("coldMode") === "1" ? "더 차갑게" : get("coldMode") === "0" ? "기본" : "확인 불가");
+    put("hotMode", get("hotMode") === "1" ? "더 뜨겁게" : get("hotMode") === "0" ? "기본" : "확인 불가");
+
+    const brightness = Number(get("brightness"));
+    put("brightness", Number.isFinite(brightness) && get("brightness") !== null ? `${Math.min(100, Math.max(0, brightness))}%` : "확인 불가");
+    put("fw", textOrUnknown("fw"));
+    put("seq", textOrUnknown("seq"));
+  </script>
+</body>
+</html>
